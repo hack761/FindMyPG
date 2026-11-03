@@ -1,0 +1,4 @@
+import { z } from "zod";
+export const registerSchema=z.object({name:z.string().trim().min(2).max(80),email:z.email().max(254),password:z.string().min(8).max(128),role:z.enum(["TENANT","OWNER"]).default("TENANT")});
+export const bookingSchema=z.object({listingId:z.string().min(1).max(80),roomType:z.enum(["private","sharing"]),moveIn:z.iso.date()});
+export const listingSearchSchema=z.object({city:z.string().trim().max(80).optional(),locality:z.string().trim().max(80).optional(),maxRent:z.coerce.number().int().min(0).max(1000000).optional(),verified:z.enum(["true","false"]).optional(),gender:z.enum(["Women only","Men only","Any gender"]).optional(),occupancy:z.coerce.number().int().min(1).max(8).optional(),amenity:z.string().trim().max(80).optional(),page:z.coerce.number().int().min(1).default(1)});

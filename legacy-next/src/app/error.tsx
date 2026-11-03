@@ -1,0 +1,1 @@
+"use client";export default function Error({reset}:{error:Error&{digest?:string};reset:()=>void}){return <main className="empty-state"><h3>Something didn’t load properly</h3><p>Your information is safe. Please try again.</p><button className="primary-btn" onClick={()=>reset()}>Try again</button></main>}

@@ -1,0 +1,1 @@
+import type { Metadata } from "next";import { SearchResults } from "@/components/marketplace";export const metadata:Metadata={title:"Find a stay"};export default async function SearchPage({searchParams}:{searchParams:Promise<{city?:string;locality?:string}>}){const params=await searchParams;return <SearchResults initialCity={params.city} initialQuery={params.locality}/>}

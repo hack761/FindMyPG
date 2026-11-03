@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  TENANT
+  OWNER
+  ADMIN
+}
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  PAUSED
+  REJECTED
+}
+enum VerificationStatus {
+  UNVERIFIED
+  IN_REVIEW
+  VERIFIED
+  REJECTED
+}
+enum BookingStatus {
+  REQUESTED
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  COMPLETED
+}
+enum VisitStatus {
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id String @id @default(cuid())
+  name String
+  email String @unique
+  phone String? @unique
+  passwordHash String
+  role Role @default(TENANT)
+  image String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ownerProfile OwnerProfile?
+  listings Listing[]
+  favorites Favorite[]
+  savedSearches SavedSearch[]
+  tenantBookings Booking[] @relation("TenantBookings")
+  ownerBookings Booking[] @relation("OwnerBookings")
+  visits Visit[]
+  reviews Review[]
+  reports Report[]
+  sentMessages Message[]
+  tenantConversations Conversation[] @relation("TenantConversations")
+  ownerConversations Conversation[] @relation("OwnerConversations")
+  notifications Notification[]
+  auditEvents AuditEvent[]
+}
+model OwnerProfile {
+  id String @id @default(cuid())
+  userId String @unique
+  bio String?
+  verifiedAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Listing {
+  id String @id @default(cuid())
+  ownerId String
+  title String
+  slug String @unique
+  description String
+  city String
+  locality String
+  landmark String?
+  address String
+  latitude Float?
+  longitude Float?
+  rentFrom Int
+  rentTo Int?
+  deposit Int
+  genderPreference String
+  curfew String?
+  foodDetails String?
+  cancellationPolicy String?
+  verifiedStatus VerificationStatus @default(UNVERIFIED)
+  status ListingStatus @default(DRAFT)
+  isDemo Boolean @default(false)
+  availableFrom DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner User @relation(fields: [ownerId], references: [id])
+  photos ListingPhoto[]
+  rooms RoomType[]
+  amenities ListingAmenity[]
+  favorites Favorite[]
+  reviews Review[]
+  bookings Booking[]
+  visits Visit[]
+  reports Report[]
+  conversations Conversation[]
+  verificationCases VerificationCase[]
+  @@index([city, locality, status])
+}
+model ListingPhoto {
+  id String @id @default(cuid())
+  listingId String
+  url String
+  alt String
+  sortOrder Int @default(0)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+model RoomType {
+  id String @id @default(cuid())
+  listingId String
+  name String
+  occupancy Int
+  monthlyRent Int
+  availableBeds Int @default(1)
+  totalBeds Int @default(1)
+  hasAc Boolean @default(false)
+  attachedBath Boolean @default(false)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+}
+model ListingAmenity {
+  id String @id @default(cuid())
+  listingId String
+  name String
+  included Boolean @default(true)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  @@unique([listingId, name])
+}
+model Favorite {
+  userId String
+  listingId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  @@id([userId, listingId])
+}
+model SavedSearch {
+  id String @id @default(cuid())
+  userId String
+  name String
+  filters Json
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Booking {
+  id String @id @default(cuid())
+  listingId String
+  roomTypeId String
+  tenantId String
+  ownerId String
+  moveIn DateTime
+  moveOut DateTime?
+  monthlyRent Int
+  deposit Int
+  platformFee Int @default(0)
+  status BookingStatus @default(REQUESTED)
+  paymentStatus String @default("NOT_CONFIGURED")
+  createdAt DateTime @default(now())
+  listing Listing @relation(fields: [listingId], references: [id])
+  roomType RoomType @relation(fields: [roomTypeId], references: [id])
+  tenant User @relation("TenantBookings", fields: [tenantId], references: [id])
+  owner User @relation("OwnerBookings", fields: [ownerId], references: [id])
+  @@index([tenantId, status])
+  @@index([ownerId, status])
+}
+model Visit {
+  id String @id @default(cuid())
+  listingId String
+  tenantId String
+  scheduledAt DateTime
+  status VisitStatus @default(REQUESTED)
+  message String?
+  createdAt DateTime @default(now())
+  listing Listing @relation(fields: [listingId], references: [id])
+  tenant User @relation(fields: [tenantId], references: [id])
+}
+model Review {
+  id String @id @default(cuid())
+  listingId String
+  userId String
+  rating Int
+  text String
+  isDemo Boolean @default(false)
+  createdAt DateTime @default(now())
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+  @@unique([listingId, userId])
+}
+model Conversation {
+  id String @id @default(cuid())
+  listingId String
+  tenantId String
+  ownerId String
+  createdAt DateTime @default(now())
+  messages Message[]
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  tenant User @relation("TenantConversations", fields: [tenantId], references: [id], onDelete: Cascade)
+  owner User @relation("OwnerConversations", fields: [ownerId], references: [id], onDelete: Cascade)
+  @@unique([listingId, tenantId, ownerId])
+}
+model Message {
+  id String @id @default(cuid())
+  conversationId String
+  senderId String
+  body String
+  createdAt DateTime @default(now())
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id])
+}
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  title String
+  body String
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Report {
+  id String @id @default(cuid())
+  listingId String
+  reporterId String
+  reason String
+  details String?
+  status ReportStatus @default(OPEN)
+  createdAt DateTime @default(now())
+  listing Listing @relation(fields: [listingId], references: [id])
+  reporter User @relation(fields: [reporterId], references: [id])
+}
+model VerificationCase {
+  id String @id @default(cuid())
+  listingId String
+  status VerificationStatus @default(IN_REVIEW)
+  notes String?
+  reviewedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+model AuditEvent {
+  id String @id @default(cuid())
+  actorId String?
+  action String
+  entityType String
+  entityId String
+  metadata Json?
+  createdAt DateTime @default(now())
+  actor User? @relation(fields: [actorId], references: [id])
+}

@@ -1,0 +1,1 @@
+import { auth } from "@/lib/auth";import { redirect } from "next/navigation";import { Portal } from "@/components/portal";export default async function TenantPage(){const session=await auth();if(!session?.user)redirect("/login");return <Portal name={session.user.name??"there"}/>}

@@ -1,0 +1,1 @@
+import { auth } from "@/lib/auth";import { redirect } from "next/navigation";import { Portal } from "@/components/portal";export default async function AdminPage(){const session=await auth();if(!session?.user)redirect("/login");if((session.user as {role?:string}).role!=="ADMIN")redirect("/tenant");return <Portal kind="admin" name={session.user.name??"Admin"}/>}

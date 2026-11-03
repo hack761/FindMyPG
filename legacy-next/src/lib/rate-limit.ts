@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server";
+const windows=new Map<string,{count:number;expires:number}>();
+/** Small process-local guard for local previews. Production should use a shared store at the edge. */
+export function enforceRateLimit(req:Request,key:string,limit=8,windowMs=60_000){const forwarded=req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();const ip=req.headers.get("x-real-ip")??forwarded??"unknown";const now=Date.now();if(windows.size>2000)for(const [k,v] of windows)if(v.expires<now)windows.delete(k);const bucketKey=`${key}:${ip}`;const current=windows.get(bucketKey);if(!current||current.expires<now){windows.set(bucketKey,{count:1,expires:now+windowMs});return null}if(current.count>=limit)return NextResponse.json({error:"Too many attempts. Please wait a minute and try again."},{status:429,headers:{"Retry-After":String(Math.ceil((current.expires-now)/1000))}});current.count++;return null}

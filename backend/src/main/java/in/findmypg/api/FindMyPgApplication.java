@@ -1,0 +1,9 @@
+package in.findmypg.api;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class FindMyPgApplication {
+    public static void main(String[] args) { SpringApplication.run(FindMyPgApplication.class, args); }
+}
